@@ -63,23 +63,6 @@
         color: #7f1d1d;
         font-size: 14px;
       }
-      .success {
-        background: #d1fae5;
-        border: 1px solid #a7f3d0;
-        border-radius: 12px;
-        padding: 20px;
-        margin-top: 20px;
-      }
-      .success h2 {
-        color: #059669;
-        font-size: 18px;
-        margin-bottom: 8px;
-      }
-      .success p {
-        color: #065f46;
-        font-size: 14px;
-        word-break: break-all;
-      }
       .manual-link {
         display: inline-block;
         margin-top: 20px;
@@ -93,16 +76,6 @@
       }
       .manual-link:hover {
         background: #ffeb3b;
-      }
-      .code-box {
-        background: #f3f4f6;
-        border-radius: 8px;
-        padding: 12px;
-        margin-top: 16px;
-        font-family: monospace;
-        font-size: 12px;
-        word-break: break-all;
-        color: #374151;
       }
     </style>
   </head>
@@ -120,39 +93,44 @@
       const error = params.get("error");
       const errorDescription = params.get("error_description");
 
+      // App's custom URL scheme (from app.json)
+      const APP_SCHEME = "rork-app";
+
       function showError(message) {
         document.getElementById("content").innerHTML = `
           <div class="error">
             <h2>로그인 실패</h2>
             <p>${message}</p>
           </div>
+          <a href="${APP_SCHEME}://login?error=auth_failed" class="manual-link">
+            앱으로 돌아가기
+          </a>
         `;
       }
 
-      function showSuccess(code) {
-        // For Expo Go, we can't directly open the app with custom scheme
-        // Show the auth code so the user can manually complete auth
-        // Or they can close this browser and the app will receive the code
-        document.getElementById("content").innerHTML = `
-          <div class="success">
-            <h2>✅ 로그인 성공!</h2>
-            <p>브라우저가 자동으로 닫히지 않으면<br>앱으로 돌아가주세요.</p>
-          </div>
-          <p style="margin-top: 20px; color: #666; font-size: 14px;">
-            인증이 완료되었습니다.
-          </p>
-        `;
+      function redirectToApp(url) {
+        console.log("Redirecting to:", url);
+
+        // Try to redirect immediately
+        window.location.href = url;
+
+        // If redirect doesn't work after 2 seconds, show manual link
+        setTimeout(() => {
+          document.getElementById("content").innerHTML = `
+            <h1>앱이 열리지 않나요?</h1>
+            <p>아래 버튼을 눌러 앱으로 이동하세요</p>
+            <a href="${url}" class="manual-link">
+              BeautyCart 앱 열기
+            </a>
+          `;
+        }, 2000);
       }
 
       // Main logic
       if (code) {
-        // Success! The WebBrowser.openAuthSessionAsync will detect this URL
-        // and automatically close the browser, passing the URL back to the app
-        showSuccess(code);
-
-        // The key insight: WebBrowser.openAuthSessionAsync monitors the URL
-        // When the URL matches the redirect URI pattern, it captures it
-        // So we don't need to manually redirect - just staying on this URL is enough
+        // Success - redirect to app with auth code
+        const appUrl = `${APP_SCHEME}://login?code=${encodeURIComponent(code)}`;
+        redirectToApp(appUrl);
       } else if (error) {
         // Error from Kakao
         showError(errorDescription || error || "알 수 없는 오류가 발생했습니다");
